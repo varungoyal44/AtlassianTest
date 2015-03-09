@@ -31,6 +31,10 @@
     return self;
 }
 
+
+/**
+ * This method will extract all the @mentions from the message.
+ */
 -(void) extractMentions{
     if(self.originalString.length == 0){
         return;
@@ -41,6 +45,10 @@
     }
 }
 
+
+/**
+ * This method will extract all the (emoticons) from the message.
+ */
 -(void) extractEmoticons{
     if(self.originalString.length == 0){
         return;
@@ -61,6 +69,11 @@
     }
 }
 
+
+/**
+ * This method will extract all the links from the message 
+ * then on a background thread grab all the URL's titles
+ */
 -(void) extractLinks{
     if(self.originalString.length == 0){
         return;
@@ -140,6 +153,11 @@
     
 }
 
+
+/**
+ * This method will do the actual task of extracting the required data,
+ * depending on the regEx from the original method.
+ */
 -(NSMutableArray *) arrayOfSubStringsForRegEx:(NSString *) regEx{
     
     NSRange lookWithIn = NSMakeRange(0, [self.originalString length]);
@@ -163,6 +181,10 @@
 }
 
 
+/**
+ * This method will create a JSON object from all the data extracted from the message.
+ * Thus in-the-end calling the delegate method which will display the data on the screen.
+ */
 -(void) jsonify
 {
     if(self.fetchedLinks)
@@ -205,7 +227,7 @@
         
         
         /*
-         Here the json object is created above (jsonData). This can be used as required. For now, i'll be returning a JSON string to the VC to be displayed.
+         The json object is created above (jsonData). This can be used as required. For now, i'll be calling a delegate method to return a JSON string to the VC to be displayed.
          */
         
         id json = [NSJSONSerialization JSONObjectWithData:jsonData

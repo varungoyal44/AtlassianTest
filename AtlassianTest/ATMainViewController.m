@@ -56,17 +56,31 @@
 
 
 #pragma mark- Action
+/**
+ * This method will instantiate the class to handle the message sent by the user.
+ * Even though most of the heavy lifing is carried out in a background thread,
+ * still the app waits for the result to be returned (by the delegate method),
+ * all the while not letting the user to input more messages, hence conceptually
+ * blocking the UI.
+ *
+ * Depending upon the requirement such a behaviour could be changed.
+ */
 - (IBAction)buttonSendWasPressed:(id)sender {
-    [self.textFieldInput resignFirstResponder];
     if(self.textFieldInput.text.length > 0){
-         ATMessageMapper *message = [[ATMessageMapper alloc] initWithMessage:self.textFieldInput.text];
+        ATMessageMapper *message = [[ATMessageMapper alloc] initWithMessage:self.textFieldInput.text];
         message.delegate = self;
+        
+        [self.textFieldInput resignFirstResponder];
         [self.buttonSend setEnabled:NO]; // so that multiple requests cannot be sent...
         [self.activityIndicator startAnimating];
     }
 }
 
 #pragma mark- ATMessageMapperDelegate method
+/**
+ * This delegate method will be returned once all the data has been parsed to extract
+ * the required data from the message entered by the user and then converted into a JSON object.
+ */
 - (void) messageMapper:(ATMessageMapper *) messageMapper
          didCreateJSON:(NSString *) returnString
 {
@@ -76,7 +90,7 @@
     
     NSString *text = [NSString stringWithFormat:@"Message: %@\n\nReturn (string):\n%@", messageMapper.originalString, returnString];
     [self.textView setText:text];
-
+    
 }
 
 
