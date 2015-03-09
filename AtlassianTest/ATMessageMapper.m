@@ -100,62 +100,45 @@
         }
         
         /*
-         This will chain all the network calls made to the found URLs.
+         This will make synchronous calls to get the HTML webpage from the links provided in the message. The calls will be made on a background thread so the main therad is not blocked.
+         
          This part of the code does not consider the case if user looses connectivity (enters a long tunnel or elevator), do we hold off the network calls? In such-a-case, a network layer could be setup which would hold off (and cache) all the network calls going out of the system until the connectivity returns.
          */
         
-        __block void (^handler)(NSURLResponse *response, NSData *data, NSError *error);
-        __weak __block void (^weakHandler)(NSURLResponse *response, NSData *data, NSError *error);
-        __block NSInteger currentRequestIndex = 0;
-        __block NSArray *allURLs = self.links.allKeys;
-        
-        
-        handler = ^(NSURLResponse *response, NSData *data, NSError *error){
-            if(data)
+        __weak typeof (self) weakSelf = self; // To handle leaks
+        NSOperationQueue *operationQueue = [[NSOperationQueue alloc] init];
+        [operationQueue addOperationWithBlock:^{
+            __strong typeof (self) strongSelf = weakSelf;
+            for(NSURL *thisURL in strongSelf.links.allKeys)
             {
-                [self.links setObject:data forKey:[allURLs objectAtIndex:currentRequestIndex]];
+                NSURLRequest *request = [NSURLRequest
+                                         requestWithURL:thisURL
+                                         cachePolicy:NSURLRequestReloadIgnoringCacheData
+                                         timeoutInterval:5.0];
+                NSURLResponse *response = nil;
+                NSError *error = nil;
+                NSData *responseData = [NSURLConnection sendSynchronousRequest:request
+                                                             returningResponse:&response
+                                                                         error:&error];
+                
+                if(responseData != nil)
+                {
+                    NSString *returnedHTML = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding];
+                    if (returnedHTML.length > 0){
+                        NSString *regEx = @"(?<=>)(.*)(?=</title>)";
+                        NSRange range = [returnedHTML rangeOfString:regEx options:NSRegularExpressionSearch];
+                        NSString *title = [returnedHTML substringWithRange:range];
+                        [strongSelf.links setObject:title forKey:thisURL];
+                    }
+                }
             }
             
-            currentRequestIndex++;
-            if (currentRequestIndex < [allURLs count]) {
-                [NSURLConnection sendAsynchronousRequest:[NSURLRequest requestWithURL:[allURLs objectAtIndex:currentRequestIndex]]
-                                                   queue:[NSOperationQueue mainQueue]
-                                       completionHandler:handler];
-            } else {
-                [self extractPageTitles];
-            }
-        };
-        
-        [NSURLConnection sendAsynchronousRequest:[NSURLRequest requestWithURL:[allURLs objectAtIndex:0]]
-                                           queue:[NSOperationQueue mainQueue]
-                               completionHandler:handler];
-        
-        
-    }
-}
-
--(void) extractPageTitles
-{
-    for(NSURL *thisURL in self.links.allKeys)
-    {
-        NSData *data = (NSData *)[self.links objectForKey:thisURL];
-        if(data != nil)
-        {
-            NSString *returnedHTML = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-            if (returnedHTML.length > 0){
-                NSString *regEx = @"(?<=>)(.*)(?=</title>)";
-                NSRange range = [returnedHTML rangeOfString:regEx options:NSRegularExpressionSearch];
-                NSString *title = [returnedHTML substringWithRange:range];
-                [self.links setObject:title forKey:thisURL];
-            }
-        }
+            strongSelf.fetchedLinks = YES;
+            [strongSelf JSONify];
+        }];
     }
     
-    self.fetchedLinks = YES;
-    [self JSONify];
-    
 }
-
 
 -(NSMutableArray *) arrayOfSubStringsForRegEx:(NSString *) regEx{
     
@@ -221,7 +204,9 @@
                                                              error:&error];
         
         
-        
+        /*
+         Here the json object is created above (jsonData). This can be used as required. For now, i'll be sending it to the VC to be displayed.
+         */
         
         NSLog(@"%@", [NSJSONSerialization JSONObjectWithData:jsonData
                                                      options:NSJSONReadingMutableLeaves
