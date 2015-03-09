@@ -26,7 +26,7 @@
         [self extractMentions];
         [self extractEmoticons];
         [self extractLinks];
-        [self JSONify];
+        [self jsonify];
     }
     return self;
 }
@@ -134,7 +134,7 @@
             }
             
             strongSelf.fetchedLinks = YES;
-            [strongSelf JSONify];
+            [strongSelf jsonify];
         }];
     }
     
@@ -163,7 +163,7 @@
 }
 
 
--(void) JSONify
+-(void) jsonify
 {
     if(self.fetchedLinks)
     {
@@ -205,15 +205,17 @@
         
         
         /*
-         Here the json object is created above (jsonData). This can be used as required. For now, i'll be sending it to the VC to be displayed.
+         Here the json object is created above (jsonData). This can be used as required. For now, i'll be returning a JSON string to the VC to be displayed.
          */
         
-        NSLog(@"%@", [NSJSONSerialization JSONObjectWithData:jsonData
-                                                     options:NSJSONReadingMutableLeaves
-                                                       error:&error]);
+        id json = [NSJSONSerialization JSONObjectWithData:jsonData
+                                                  options:NSJSONReadingMutableLeaves
+                                                    error:&error];
         
-        
-        
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+            [self.delegate messageMapper:self
+                           didCreateJSON:[NSString stringWithFormat:@"%@", json]];
+        }];
     }
     
 }

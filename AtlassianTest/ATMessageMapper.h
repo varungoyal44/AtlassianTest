@@ -7,10 +7,19 @@
 //
 
 #import <Foundation/Foundation.h>
-typedef void (^JsonifyCompletionHandler)(NSData *json, NSError* error);
+@protocol ATMessageMapperDelegate;
 
 
 @interface ATMessageMapper : NSObject
--(id) initWithMessage:(NSString *) message;
+@property (nonatomic, readonly) NSString *originalString;
+@property (nonatomic, weak) id<ATMessageMapperDelegate> delegate;
 
+-(id) initWithMessage:(NSString *) message;
 @end
+
+
+@protocol ATMessageMapperDelegate <NSObject>
+- (void) messageMapper:(ATMessageMapper *) messageMapper
+         didCreateJSON:(NSString *) returnString;
+@end
+

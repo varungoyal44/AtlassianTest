@@ -9,11 +9,12 @@
 #import "ATMainViewController.h"
 #import "ATMessageMapper.h"
 
-@interface ATMainViewController () <UITextFieldDelegate>
-@property (weak, nonatomic) IBOutlet UILabel *labelOutput;
+@interface ATMainViewController () <ATMessageMapperDelegate>
+@property BOOL isKeyboardDisplayed;
+@property (weak, nonatomic) IBOutlet UITextView *textView;
 @property (weak, nonatomic) IBOutlet UITextField *textFieldInput;
-@property (weak, nonatomic) IBOutlet UIButton *buttonTest;
-@property (strong, nonatomic) ATMessageMapper *message;
+@property (weak, nonatomic) IBOutlet UIButton *buttonSend;
+@property (weak, nonatomic) IBOutlet UIActivityIndicatorView *activityIndicator;
 @end
 
 
@@ -23,6 +24,16 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(keyboardWillShow:)
+                                                 name:UIKeyboardWillShowNotification
+                                               object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(keyboardWillHide:)
+                                                 name:UIKeyboardWillHideNotification
+                                               object:nil];
+    [self.activityIndicator stopAnimating];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -30,23 +41,86 @@
 }
 
 
-
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+    // unregister for keyboard notifications while not visible.
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:UIKeyboardWillShowNotification
+                                                  object:nil];
+    
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:UIKeyboardWillHideNotification
+                                                  object:nil];
+}
 
 
 #pragma mark- Action
-- (IBAction)buttonTestWasPressed:(id)sender {
+- (IBAction)buttonSendWasPressed:(id)sender {
+    [self.textFieldInput resignFirstResponder];
     if(self.textFieldInput.text.length > 0){
-        self.message = [[ATMessageMapper alloc] initWithMessage:self.textFieldInput.text];
+         ATMessageMapper *message = [[ATMessageMapper alloc] initWithMessage:self.textFieldInput.text];
+        message.delegate = self;
+        [self.buttonSend setEnabled:NO]; // so that multiple requests cannot be sent...
+        [self.activityIndicator startAnimating];
     }
 }
 
+#pragma mark- ATMessageMapperDelegate method
+- (void) messageMapper:(ATMessageMapper *) messageMapper
+         didCreateJSON:(NSString *) returnString
+{
+    [self.textFieldInput setText:@""];
+    [self.buttonSend setEnabled:YES];
+    [self.activityIndicator stopAnimating];
+    
+    NSString *text = [NSString stringWithFormat:@"Message: %@\n\nReturn (string):\n%@", messageMapper.originalString, returnString];
+    [self.textView setText:text];
 
-- (IBAction)textFieldInputDidEndEditing:(id)sender{
-    [self buttonTestWasPressed:sender];
 }
 
 
+#pragma mark- keyboard
+- (void)keyboardWillHide:(NSNotification *)notification
+{
+    NSDictionary* userInfo = [notification userInfo];
+    
+    // get the size of the keyboard
+    CGSize keyboardSize = [[userInfo objectForKey:UIKeyboardFrameBeginUserInfoKey] CGRectValue].size;
+    
+    
+    // resize the scrollview
+    CGRect viewFrame = self.view.frame;
+    viewFrame.size.height += (keyboardSize.height);
+    
+    [UIView beginAnimations:nil context:NULL];
+    [UIView setAnimationDuration:[[userInfo objectForKey:UIKeyboardAnimationDurationUserInfoKey] doubleValue]];
+    [UIView setAnimationCurve:[[userInfo objectForKey:UIKeyboardAnimationCurveUserInfoKey] integerValue]];
+    [UIView setAnimationBeginsFromCurrentState:YES];
+    [self.view setFrame:viewFrame];
+    [UIView commitAnimations];
+    self.isKeyboardDisplayed = NO;
+}
 
+- (void)keyboardWillShow:(NSNotification *)notification
+{
+    NSDictionary* userInfo = [notification userInfo];
+    
+    // get the size of the keyboard
+    CGSize keyboardSize = [[userInfo objectForKey:UIKeyboardFrameBeginUserInfoKey] CGRectValue].size;
+    
+    // resize the noteView
+    CGRect viewFrame = self.view.frame;
+    viewFrame.size.height = viewFrame.size.height - keyboardSize.height;
+    
+    [UIView beginAnimations:nil context:NULL];
+    [UIView setAnimationDuration:[[userInfo objectForKey:UIKeyboardAnimationDurationUserInfoKey] doubleValue]];
+    [UIView setAnimationCurve:[[userInfo objectForKey:UIKeyboardAnimationCurveUserInfoKey] integerValue]];
+    [UIView setAnimationBeginsFromCurrentState:YES];
+    [self.view setFrame:viewFrame];
+    [UIView commitAnimations];
+    self.isKeyboardDisplayed = YES;
+}
 
 
 
