@@ -99,14 +99,14 @@
 {
     NSDictionary* userInfo = [notification userInfo];
     
-    // get the size of the keyboard
+    // get the size of the keyboard.
     CGSize keyboardSize = [[userInfo objectForKey:UIKeyboardFrameBeginUserInfoKey] CGRectValue].size;
     
-    
-    // resize the scrollview
+    // resize the view.
     CGRect viewFrame = self.view.frame;
     viewFrame.size.height += (keyboardSize.height);
     
+    // animate the resize with keyboard.
     [UIView beginAnimations:nil context:NULL];
     [UIView setAnimationDuration:[[userInfo objectForKey:UIKeyboardAnimationDurationUserInfoKey] doubleValue]];
     [UIView setAnimationCurve:[[userInfo objectForKey:UIKeyboardAnimationCurveUserInfoKey] integerValue]];
@@ -120,13 +120,14 @@
 {
     NSDictionary* userInfo = [notification userInfo];
     
-    // get the size of the keyboard
+    // get the size of the keyboard.
     CGSize keyboardSize = [[userInfo objectForKey:UIKeyboardFrameBeginUserInfoKey] CGRectValue].size;
     
-    // resize the noteView
+    // resize the view.
     CGRect viewFrame = self.view.frame;
     viewFrame.size.height = viewFrame.size.height - keyboardSize.height;
     
+    // animate the resize with keyboard.
     [UIView beginAnimations:nil context:NULL];
     [UIView setAnimationDuration:[[userInfo objectForKey:UIKeyboardAnimationDurationUserInfoKey] doubleValue]];
     [UIView setAnimationCurve:[[userInfo objectForKey:UIKeyboardAnimationCurveUserInfoKey] integerValue]];
